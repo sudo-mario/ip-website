@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lookup IP - 28</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 100%;
+            margin: 0 auto;
+            padding: 20px;
+            color: white;
+            overflow-x: hidden;
+        }
+        .input-group {
+            margin: 20px 0;
+        }
+        input {
+            padding: 8px;
+            font-size: 16px;
+            width: 200px;
+        }
+        button {
+            padding: 8px 16px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 20px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            max-height: 60vh;
+            overflow-y: auto;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+            width: 90%;
+            max-width: 800px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        .loading {
+            display: none;
+        }
+        .error {
+            color: red;
+        }
+        img {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            object-fit: cover;
+        }
+        .container {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            min-height: 20vh;
+            padding: 20px;
+        }
+        .input-container {
+            position: relative;
+            width: 90%;
+            max-width: 600px;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 15px;
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+        }
+        .input-field {
+            width: 100%;
+            padding: 12px 50px 12px 15px;
+            border: none;
+            background: transparent;
+            color: #fff;
+            font-size: 16px;
+            outline: none;
+        }
+        .enter-button {
+            position: absolute;
+            right: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            padding: 8px;
+            color: #fff;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+        }
+        .enter-button:hover {
+            transform: translateY(-50%) scale(1.1);
+        }
+        .magnifier-icon {
+            font-size: 20px;
+        }
+        .spoiler {
+            background-color: #333;
+            color: transparent;
+            padding: 2px 5px;
+            border-radius: 3px;
+            cursor: pointer;
+            user-select: none;
+        }
+        
+        .spoiler:hover {
+            background-color: #444;
+        }
+        
+        .spoiler.revealed {
+            background-color: transparent;
+            color: white;
+        }
+        .special{
+            background-color: #370085;
+            color: white;
+            padding: 2px 5px;
+            border-radius: 3px;
+            user-select: none;
+        }
+        .status {
+            text-align: center;
+            margin: 20px 0;
+            padding: 10px;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+        .status-success {
+            background-color: rgba(0, 255, 0, 0.2);
+            color: #00ff00;
+        }
+        .status-error {
+            background-color: rgba(255, 0, 0, 0.2);
+            color: #ff0000;
+        }
+
+        .result::-webkit-scrollbar {
+            display: none;
+        }
+
+        .result::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+        }
+
+        .result::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 10px;
+        }
+
+        .result::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.4);
+        }
+
+        .result {
+            scrollbar-width: thin;
+            scrollbar-color: rgba(255, 255, 255, 0.3) rgba(255, 255, 255, 0.1);
+        }
+
+        #map {
+            height: 300px;
+            width: 100%;
+            margin-top: 20px;
+            border-radius: 5px;
+        }
+
+        @media screen and (max-width: 768px) {
+            body {
+                padding: 10px;
+            }
+            
+            .input-container {
+                width: 95%;
+                padding: 10px;
+            }
+            
+            .input-field {
+                font-size: 14px;
+                padding: 10px 40px 10px 10px;
+            }
+            
+            .result {
+                padding: 15px;
+                font-size: 14px;
+                width: 95%;
+            }
+            
+            #map {
+                height: 250px;
+            }
+            .enter-button {
+                padding: 12px;
+            }
+            .credits {
+                display: none;
+            }
+        }
+
+        @media screen and (max-width: 480px) {
+            .special {
+                display: inline-block;
+                margin: 2px 0;
+                word-break: break-word;
+            }
+            
+            #map {
+                height: 200px;
+            }
+        }
+
+        .credits {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 10px 20px;
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+            color: white;
+            font-size: 14px;
+            z-index: 1000;
+        }
+    </style>
+</head>
+<body>
+    <img src="bg.jpg" alt="background">
+    <div class="container">
+        <div class="input-container">
+            <input type="text" class="input-field" id="ipInput" placeholder="Enter IP address" />
+            <button class="enter-button" onclick="getLocation()">
+                🔍
+            </button>
+        </div>
+        <div class="status"></div>
+        <div id="loading" class="loading">Loading...</div>
+        <div id="result" class="result"></div>
+    </div>
+    
+    <div class="credits">
+        coded by twenyeigt with ☕ & ❤
+    </div>
+
+    <script>
+        async function getLocation() {
+            const ipAddress = document.getElementById('ipInput').value.trim();
+            const loading = document.getElementById('loading');
+            const result = document.getElementById('result');
+            const status = document.querySelector('.status');
+            
+            const ipRegex = /^(\d{1,3}\.){3}\d{1,3}$/;
+            if (!ipRegex.test(ipAddress)) {
+                result.innerHTML = '<p class="error">Please enter a valid IP address</p>';
+                return;
+            }
+
+            loading.style.display = 'block';
+            result.innerHTML = '';
+
+            try {
+                const response = await fetch(`https://ipinfo.io/${ipAddress}/json`);
+                const data = await response.json();
+                
+                if (data.ip) {
+                    status.textContent = 'Success';
+                    status.className = 'status status-success';
+                    
+                    const [lat, lon] = data.loc.split(',');
+                    result.innerHTML = `
+                        <h2>Location Information for <span class="spoiler">${ipAddress}</span>:</h2>
+                        <p>Country: <span class="special">${data.country}</span></p>
+                        <p>City: <span class="special">${data.city}</span></p>
+                        <p>Region: <span class="special">${data.region}</span></p>
+                        <p>Postal Code: <span class="special">${data.postal || 'N/A'}</span></p>
+                        <p>Organization: <span class="special">${data.org || 'N/A'}</span></p>
+                        <p>Location: <span class="special">${data.loc}</span></p>
+                        <p>Timezone: <span class="special">${data.timezone}</span></p>
+                        <p>Hostname: <span class="special">${data.hostname || 'N/A'}</span></p>
+                        <p>ASN: <span class="special">${data.asn || 'N/A'}</span></p>
+                        <p>Abuse Contact: <span class="special">${data.abuse?.email || 'N/A'}</span></p>
+                        <p>Abuse Phone: <span class="special">${data.abuse?.phone || 'N/A'}</span></p>
+                        <p>Company Name: <span class="special">${data.company?.name || 'N/A'}</span></p>
+                        <p>Company Domain: <span class="special">${data.company?.domain || 'N/A'}</span></p>
+                        <p>Company Type: <span class="special">${data.company?.type || 'N/A'}</span></p>
+                        <p>Privacy: <span class="special">${data.privacy?.vpn ? 'VPN Detected' : 'No VPN'}</span></p>
+                        <p>Privacy Proxy: <span class="special">${data.privacy?.proxy ? 'Proxy Detected' : 'No Proxy'}</span></p>
+                        <p>Privacy Tor: <span class="special">${data.privacy?.tor ? 'Tor Detected' : 'No Tor'}</span></p>
+                        <p>Privacy Hosting: <span class="special">${data.privacy?.hosting ? 'Hosting Detected' : 'No Hosting'}</span></p>
+                        <div id="map"></div>
+                    `;
+                    
+                    const map = L.map('map').setView([lat, lon], 13);
+                    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                    }).addTo(map);
+                    
+                    L.marker([lat, lon])
+                        .addTo(map)
+                        .bindPopup(`<b>${data.city}, ${data.country}</b><br>IP: ${ipAddress}`)
+                        .openPopup();
+                    
+                    const spoiler = result.querySelector('.spoiler');
+                    spoiler.addEventListener('click', function() {
+                        this.classList.toggle('revealed');
+                    });
+                } else {
+                    status.textContent = 'Error';
+                    status.className = 'status status-error';
+                    result.innerHTML = '<p class="error">Unable to fetch location data for this IP.</p>';
+                }
+            } catch (error) {
+                status.textContent = 'Error';
+                status.className = 'status status-error';
+                result.innerHTML = `<p class="error">Error: ${error.message}</p>`;
+            } finally {
+                loading.style.display = 'none';
+            }
+        }
+
+        document.getElementById('ipInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                getLocation();
+            }
+        });
+    </script>
+</body>
+</html>
